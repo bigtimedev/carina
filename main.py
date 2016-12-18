@@ -6,14 +6,26 @@ import scraperhelpers
 
 url = 'https://pslinks.fiu.edu/psc/cslinks/EMPLOYEE/CAMP/Kkac/COMMUNITY_ACCESS.CLASS_SEARCH.GBL&FolderPath=PORTAL_ROOT_OBJECT.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath,IsFolder?&'
 
-def click_through_classes():
-	 links = driver.find_elements_by_css_selector('a[id^="MTG_CLASS_NBR"]')
-	 ids = [link.get_attribute('id') for link in links]
-	 print ids
-
 driver = webdriver.Chrome()
 driver.get(url)
 driver.get(url) #with cookies
+
+def click_through_classes():
+	 links = driver.find_elements_by_css_selector('a[id^="MTG_CLASS_NBR"]')
+	 ids = [link.get_attribute('id') for link in links]
+
+	 for i in ids:
+		  link = driver.find_element_by_id(i)
+		  link.click()
+		  scraperhelpers.wait_for_stale_link(link)
+		  class_name = driver.find_element_by_id('DERIVED_CLSRCH_DESCR200').text
+		  capacity = driver.find_element_by_id('SSR_CLS_DTL_WRK_ENRL_CAP').text
+		  enrolled_num = driver.find_element_by_id('SSR_CLS_DTL_WRK_ENRL_TOT').text
+		  print '%s : %s / %s' % (class_name, enrolled_num, capacity)
+		  back_button = driver.find_element_by_id('CLASS_SRCH_WRK2_SSR_PB_BACK')
+		  back_button.click()
+		  scraperhelpers.wait_for_stale_link(back_button)
+
 
 for number in range(1000):
 	 padded_number = '%03d' % number
