@@ -6,6 +6,11 @@ import scraperhelpers
 
 url = 'https://pslinks.fiu.edu/psc/cslinks/EMPLOYEE/CAMP/Kkac/COMMUNITY_ACCESS.CLASS_SEARCH.GBL&FolderPath=PORTAL_ROOT_OBJECT.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath,IsFolder?&'
 
+def click_through_classes():
+	 links = driver.find_elements_by_css_selector('a[id^="MTG_CLASS_NBR"]')
+	 ids = [link.get_attribute('id') for link in links]
+	 print ids
+
 driver = webdriver.Chrome()
 driver.get(url)
 driver.get(url) #with cookies
@@ -36,6 +41,8 @@ for number in range(1000):
 
 	 for course in driver.find_elements_by_class_name('PAGROUPBOXLABELLEVEL1'):
 		  print course.text
+
+	 click_through_classes()
 
 	 try:
 		  new_search_button = driver.find_element_by_id('CLASS_SRCH_WRK2_SSR_PB_NEW_SEARCH')
