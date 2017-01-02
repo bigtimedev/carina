@@ -10,9 +10,6 @@ def wait_for_stale_link(element):
 			return True
 
 	start_time = time.time()
-	while time.time() < start_time + 30:
+	while True:
 		if link_stale():
 			return True
-		else:
-			time.sleep(0.1)
-	raise Exception('Timeout waiting for stale link')
