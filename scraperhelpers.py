@@ -8,6 +8,9 @@ def wait_for_stale_link(element):
 			return False
 		except StaleElementReferenceException:
 			return True
+		except TimeoutException:
+			pass
+			return True
 
 	start_time = time.time()
 	while True:

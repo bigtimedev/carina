@@ -2,24 +2,25 @@
 
 from selenium import webdriver
 from selenium import common
+from selenium.webdriver.chrome.options import Options
 from collections import deque
-from time import gmtime, strftime
+from time import gmtime, strftime, sleep
+import re
+import sys
 
 import threading
 import scraperhelpers
 import code
-import re
-import sys
 
-url = 'https://pslinks.fiu.edu/psc/cslinks/EMPLOYEE/CAMP/Kkac/COMMUNITY_ACCESS.CLASS_SEARCH.GBL&FolderPath=PORTAL_ROOT_OBJECT.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath,IsFolder?&'
+
+url = 'https://mymdcsprodpub.oracleoutsourcing.com/psp/PMYM1J/CUSTOMER/CAMP/c/COMMUNITY_ACCESS.CLASS_SEARCH.GBL?FolderPath=PORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath%2cIsFolder'
 already_seen = set()
 
 date_time = strftime("%Y-%m-%d %H%M", gmtime())
-FILE_NAME = "fiu "+date_time+".csv"
+FILE_NAME = "mdc "+date_time+".csv"
 file_lock = threading.Lock()
 output_file = open(FILE_NAME, 'w')
-output_file.write("Class Number, Class Name, Section Name, Instructor, Capacity, Enrolled, Available Seats, Wait List Capacity, Wait List Total")
-
+output_file.write("Class Number, Class Name, Section Name, Instructor, Capacity, Enrolled, Available Seats, Wait List Capacity, Wait List Total\n")
 
 #encoding
 reload(sys)
@@ -51,6 +52,9 @@ def log_entry(class_num,
         print "goddammit with this"
     file_lock.release()
 
+def scrub(text):
+    return re.sub(r',', '·',text)
+
 def click_through_classes(driver):
     links = driver.find_elements_by_css_selector('a[id^="MTG_CLASS_NBR"]')
     ids = [link.get_attribute('id') for link in links]
@@ -61,15 +65,15 @@ def click_through_classes(driver):
             continue
         already_seen.add(class_num)
         num = i.split('$')[1]
-        section_name = driver.find_element_by_id('MTG_CLASSNAME$%s' % num).text
+        section_name = scrub(driver.find_element_by_id('MTG_CLASSNAME$%s' % num).text)
         link = driver.find_element_by_id(i)
         link.click()
         scraperhelpers.wait_for_stale_link(link)
-        class_name = driver.find_element_by_id('DERIVED_CLSRCH_DESCR200').text
+        class_name = scrub(driver.find_element_by_id('DERIVED_CLSRCH_DESCR200').text)
         capacity = driver.find_element_by_id('SSR_CLS_DTL_WRK_ENRL_CAP').text
         enrolled_num = driver.find_element_by_id('SSR_CLS_DTL_WRK_ENRL_TOT').text
         available_seats = driver.find_element_by_id('SSR_CLS_DTL_WRK_AVAILABLE_SEATS').text
-        instructor = driver.find_element_by_id('MTG_INSTR$0').text
+        instructor = scrub(driver.find_element_by_id('MTG_INSTR$0').text)
         wait_list_capacity = driver.find_element_by_id('SSR_CLS_DTL_WRK_WAIT_CAP').text
         wait_list_total = driver.find_element_by_id('SSR_CLS_DTL_WRK_WAIT_TOT').text
         log_entry(class_num, class_name, section_name, instructor, capacity, enrolled_num, available_seats, wait_list_capacity, wait_list_total)
@@ -78,17 +82,18 @@ def click_through_classes(driver):
         scraperhelpers.wait_for_stale_link(back_button)
 
 def search_by_class_number(number, driver):
-    padded_number = '%03d' % number
 
-    course_number_select = driver.find_element_by_id('SSR_CLSRCH_WRK_SSR_EXACT_MATCH1$4')
-    for option in course_number_select.find_elements_by_tag_name('option'):
-        if option.get_attribute('value') == 'C':
-            option.click()
-            break
+    # sometimes, there's an iframe, and sometimes, there's not an iframe.
+    try:
+        search_iframe = driver.find_element_by_id('ptifrmtgtframe')
+        driver.switch_to_frame(search_iframe)
+    except common.exceptions.NoSuchElementException:
+        pass
 
-    course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$4')
+
+    course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$1')
     course_number_input.clear()
-    course_number_input.send_keys(padded_number)
+    course_number_input.send_keys(number)
     submit_button = driver.find_element_by_id('CLASS_SRCH_WRK2_SSR_PB_CLASS_SRCH')
     submit_button.click()
 
@@ -104,7 +109,7 @@ def search_by_class_number(number, driver):
     try:
         error_message = driver.find_element_by_id('DERIVED_CLSMSG_ERROR_TEXT')
         if error_message and 'maximum limit' in error_message.text:
-            print "too many in %s " % padded_number
+            print "too many in %s " % number
     except common.exceptions.NoSuchElementException:
         click_through_classes(driver)
 
@@ -117,12 +122,12 @@ def search_by_class_number(number, driver):
 
 # lock acquisition specifically for getting length of stack
 stack_lock = threading.Lock()
-stack = deque(range(1000, 8000))
+stack = deque(range(100, 5000)) #TODO 5000
 
 def spawn_driver():
     driver = webdriver.Chrome()
+
     driver.get(url)
-    driver.get(url) # with cookies
     stack_lock.acquire()
     while len(stack) > 0:
         stack_lock.release()
@@ -131,6 +136,6 @@ def spawn_driver():
         stack_lock.acquire()
     driver.close()
 
-for num in range(10):
+for num in range(10): #TODO 10
     t = threading.Thread(target=spawn_driver)
     t.start()
