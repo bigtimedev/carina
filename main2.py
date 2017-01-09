@@ -120,22 +120,40 @@ def search_by_class_number(number, driver):
     except common.exceptions.NoSuchElementException:
         pass
 
+
 # lock acquisition specifically for getting length of stack
 stack_lock = threading.Lock()
 stack = deque(range(100, 5000)) #TODO 5000
+stack2 = deque(range(10))
 
 def spawn_driver():
-    driver = webdriver.Chrome()
-
+    stack_lock.acquire()
+    portadder = stack2.pop()
+    stack_lock.release()
+    port_number = 4444+portadder
+    driver = webdriver.Chrome('chromedriver.exe',portadder)
+    #driver = webdriver.Chrome()
     driver.get(url)
     stack_lock.acquire()
     while len(stack) > 0:
-        stack_lock.release()
         number = stack.pop()
-        search_by_class_number(number, driver)
+        stack_lock.release()
+        
+        while True:
+        	try:
+        		search_by_class_number(number, driver)
+        	except:
+        		continue
+        	else:
+        		break
         stack_lock.acquire()
     driver.close()
 
-for num in range(10): #TODO 10
+if (os.name = 'nt'):
+	threadcount = 1
+else:
+	threadcount = 10
+
+for num in range(threadcount): #TODO 10
     t = threading.Thread(target=spawn_driver)
     t.start()
