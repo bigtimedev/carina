@@ -10,9 +10,13 @@ import scraperhelpers
 import code
 import re
 import sys
+import os
 
 url = 'https://pslinks.fiu.edu/psc/cslinks/EMPLOYEE/CAMP/Kkac/COMMUNITY_ACCESS.CLASS_SEARCH.GBL&FolderPath=PORTAL_ROOT_OBJECT.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath,IsFolder?&'
 already_seen = set()
+
+mustChangeSemester = False
+semester = ""
 
 date_time = strftime("%Y-%m-%d %H%M", gmtime())
 FILE_NAME = "fiu "+date_time+".csv"
@@ -80,6 +84,13 @@ def click_through_classes(driver):
 def search_by_class_number(number, driver):
     padded_number = '%03d' % number
 
+    if (mustChangeSemester == True):
+        semester_select = driver.find_element_by_id('CLASS_SRCH_WRK2_STRM$35$')
+        for option in semester_select.find_elements_by_tag_name('option'):
+            if option.get_attribute('value') == semester:
+                option.click()
+                break
+
     course_number_select = driver.find_element_by_id('SSR_CLSRCH_WRK_SSR_EXACT_MATCH1$4')
     for option in course_number_select.find_elements_by_tag_name('option'):
         if option.get_attribute('value') == 'C':
@@ -115,23 +126,70 @@ def search_by_class_number(number, driver):
     except common.exceptions.NoSuchElementException:
         pass
 
+
+def get_semester():
+    if (os.name == 'nt'):
+        semesterdriver = webdriver.Chrome('chromedriver.exe')
+    else:
+        semesterdriver = webdriver.Chrome()
+
+    semesterdriver.get(url)
+    semesterdriver.get(url)
+
+    try:
+        search_iframe = semesterdriver.find_element_by_id('ptifrmtgtframe')
+        semesterdriver.switch_to_frame(search_iframe)
+    except common.exceptions.NoSuchElementException:
+        pass
+
+    semester_select = semesterdriver.find_element_by_id('CLASS_SRCH_WRK2_STRM$35$')
+    for option in semester_select.find_elements_by_tag_name('option'):
+        prompt = option.text, "y/n   "
+        answer = raw_input(prompt)
+        if (answer == "y"):
+            if (option.get_attribute('selected') != 'selected'):
+                global mustChangeSemester
+                mustChangeSemester = True
+                global semester
+                semester = option.get_attribute('value')
+            else:
+                print "not already selected"
+            break
+
+    semesterdriver.close()
+
+
 # lock acquisition specifically for getting length of stack
 stack_lock = threading.Lock()
 stack = deque(range(1000, 8000))
 
+
 def spawn_driver():
-    driver = webdriver.Chrome()
+    if (os.name == 'nt'):
+        driver = webdriver.Chrome('chromedriver.exe')
+    else:
+        driver = webdriver.Chrome()
     driver.get(url)
-    driver.get(url) # with cookies
+    driver.get(url)
     stack_lock.acquire()
     while len(stack) > 0:
-        stack_lock.release()
         number = stack.pop()
-        search_by_class_number(number, driver)
+        stack_lock.release()
+        
+        while True:
+            try:
+                search_by_class_number(number, driver)
+            except:
+                continue
+            else:
+                break
         stack_lock.acquire()
     driver.close()
 
-if (os.name = 'nt'):
+#get stupid semester
+get_semester()
+
+if (os.name == 'nt'):
     threadcount = 1
 else:
     threadcount = 10

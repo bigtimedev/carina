@@ -7,6 +7,7 @@ from collections import deque
 from time import gmtime, strftime, sleep
 import re
 import sys
+import os
 
 import threading
 import scraperhelpers
@@ -15,6 +16,8 @@ import code
 
 url = 'https://mymdcsprodpub.oracleoutsourcing.com/psp/PMYM1J/CUSTOMER/CAMP/c/COMMUNITY_ACCESS.CLASS_SEARCH.GBL?FolderPath=PORTAL_ROOT_OBJECT.CO_EMPLOYEE_SELF_SERVICE.HC_CLASS_SEARCH_GBL&IsFolder=false&IgnoreParamTempl=FolderPath%2cIsFolder'
 already_seen = set()
+mustChangeSemester = False
+semester = ""
 
 date_time = strftime("%Y-%m-%d %H%M", gmtime())
 FILE_NAME = "mdc "+date_time+".csv"
@@ -90,6 +93,13 @@ def search_by_class_number(number, driver):
     except common.exceptions.NoSuchElementException:
         pass
 
+    if (mustChangeSemester == True):
+        semester_select = driver.find_element_by_id('CLASS_SRCH_WRK2_STRM$35$')
+        for option in semester_select.find_elements_by_tag_name('option'):
+            if option.get_attribute('value') == semester:
+                option.click()
+                break
+
 
     course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$1')
     course_number_input.clear()
@@ -109,7 +119,7 @@ def search_by_class_number(number, driver):
     try:
         error_message = driver.find_element_by_id('DERIVED_CLSMSG_ERROR_TEXT')
         if error_message and 'maximum limit' in error_message.text:
-            print "too many in %s " % number
+             "too many in %s " % number
     except common.exceptions.NoSuchElementException:
         click_through_classes(driver)
 
@@ -120,19 +130,45 @@ def search_by_class_number(number, driver):
     except common.exceptions.NoSuchElementException:
         pass
 
+def get_semester():
+    if (os.name == 'nt'):
+        semesterdriver = webdriver.Chrome('chromedriver.exe')
+    else:
+        semesterdriver = webdriver.Chrome()
+    semesterdriver.get(url)
+
+    try:
+        search_iframe = semesterdriver.find_element_by_id('ptifrmtgtframe')
+        semesterdriver.switch_to_frame(search_iframe)
+    except common.exceptions.NoSuchElementException:
+        pass
+
+    semester_select = semesterdriver.find_element_by_id('CLASS_SRCH_WRK2_STRM$35$')
+    for option in semester_select.find_elements_by_tag_name('option'):
+        prompt = option.text, "y/n   "
+        answer = raw_input(prompt)
+        if (answer == "y"):
+            if (option.get_attribute('selected') != 'selected'):
+                global mustChangeSemester
+                mustChangeSemester = True
+                global semester
+                semester = option.get_attribute('value')
+            else:
+                print "not already selected"
+            break
+
+    semesterdriver.close()
+
 
 # lock acquisition specifically for getting length of stack
 stack_lock = threading.Lock()
-stack = deque(range(100, 5000)) #TODO 5000
-stack2 = deque(range(10))
+stack = deque(range(100, 5000))
 
 def spawn_driver():
-    stack_lock.acquire()
-    portadder = stack2.pop()
-    stack_lock.release()
-    port_number = 4444+portadder
-    driver = webdriver.Chrome('chromedriver.exe',portadder)
-    #driver = webdriver.Chrome()
+    if (os.name == 'nt'):
+        driver = webdriver.Chrome('chromedriver.exe')
+    else:
+        driver = webdriver.Chrome()
     driver.get(url)
     stack_lock.acquire()
     while len(stack) > 0:
@@ -149,7 +185,11 @@ def spawn_driver():
         stack_lock.acquire()
     driver.close()
 
-if (os.name = 'nt'):
+#get stupid semester
+get_semester()
+
+#windows can really really really only handle one...
+if (os.name == 'nt'):
 	threadcount = 1
 else:
 	threadcount = 10

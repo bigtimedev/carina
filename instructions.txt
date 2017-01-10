@@ -1,0 +1,15 @@
+DO THESE ONCE:
+
+Download python 2.7:
+https://www.python.org/ftp/python/2.7.13/python-2.7.13.msi
+
+Install Selenium:
+Open up command prompt (windows + r, then type cmd and enter)
+Type "pip install selenium", then hit enter
+
+DO THIS WHEN YOU WANT TO RUN THE PROGRAM:
+Open up command prompt (windows + r, then type cmd and enter)
+Navigate to where the script is, i.e. "cd desktop/carina" 
+Run the program: "python fiu.py" or "python mdc.py"
+The program will give you a list of semester options. press "y" and enter for yes, or "n" and enter for no. if you press n to all of the options it will take whatever is the default of the page.
+If you need to stop the program, press control+c. 
