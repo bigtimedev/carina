@@ -22,7 +22,7 @@ date_time = strftime("%Y-%m-%d %H%M", gmtime())
 FILE_NAME = "fiu "+date_time+".csv"
 file_lock = threading.Lock()
 output_file = open(FILE_NAME, 'w')
-output_file.write("Class Number, Class Name, Section Name, Instructor, Capacity, Enrolled, Available Seats, Wait List Capacity, Wait List Total")
+output_file.write("Class Number, Campus, Class Name, Section Name, Instructor, Capacity, Enrolled, Available Seats, Wait List Capacity, Wait List Total")
 
 
 #encoding
@@ -30,6 +30,7 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 def log_entry(class_num,
+        campus,
         class_name,
         section_name,
         instructor,
@@ -40,11 +41,12 @@ def log_entry(class_num,
         wait_list_total):
     file_lock.acquire()
     try:
-        output_file.write(("%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+        output_file.write(("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
         class_num,
+        campus,
         class_name,
         section_name,
-        instructor,
+        instructor.replace(',', ';'),
         capacity,
         enrolled_num,
         available_seats,
@@ -76,7 +78,8 @@ def click_through_classes(driver):
         instructor = driver.find_element_by_id('MTG_INSTR$0').text
         wait_list_capacity = driver.find_element_by_id('SSR_CLS_DTL_WRK_WAIT_CAP').text
         wait_list_total = driver.find_element_by_id('SSR_CLS_DTL_WRK_WAIT_TOT').text
-        log_entry(class_num, class_name, section_name, instructor, capacity, enrolled_num, available_seats, wait_list_capacity, wait_list_total)
+        campus = driver.find_element_by_id('CAMPUS_TBL_DESCR').text
+        log_entry(class_num, campus, class_name, section_name, instructor, capacity, enrolled_num, available_seats, wait_list_capacity, wait_list_total)
         back_button = driver.find_element_by_id('CLASS_SRCH_WRK2_SSR_PB_BACK')
         back_button.click()
         scraperhelpers.wait_for_stale_link(back_button)
@@ -175,7 +178,6 @@ def spawn_driver():
     while len(stack) > 0:
         number = stack.pop()
         stack_lock.release()
-        
         while True:
             try:
                 search_by_class_number(number, driver)
