@@ -85,8 +85,6 @@ def click_through_classes(driver):
         scraperhelpers.wait_for_stale_link(back_button)
 
 def search_by_class_number(number, driver):
-    padded_number = '%03d' % number
-
     if (mustChangeSemester == True):
         semester_select = driver.find_element_by_id('CLASS_SRCH_WRK2_STRM$35$')
         for option in semester_select.find_elements_by_tag_name('option'):
@@ -102,7 +100,7 @@ def search_by_class_number(number, driver):
 
     course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$4')
     course_number_input.clear()
-    course_number_input.send_keys(padded_number)
+    course_number_input.send_keys(number)
     submit_button = driver.find_element_by_id('CLASS_SRCH_WRK2_SSR_PB_CLASS_SRCH')
     submit_button.click()
 
@@ -118,7 +116,7 @@ def search_by_class_number(number, driver):
     try:
         error_message = driver.find_element_by_id('DERIVED_CLSMSG_ERROR_TEXT')
         if error_message and 'maximum limit' in error_message.text:
-            print("too many in %s " % padded_number)
+            print("too many in %s " % number)
     except common.exceptions.NoSuchElementException:
         click_through_classes(driver)
 
@@ -180,12 +178,22 @@ def spawn_driver():
         stack_lock.release()
         while True:
             try:
-                search_by_class_number(number, driver)
+                search_by_class_number("%03d" % number, driver)
             except:
                 continue
             else:
                 break
+        while True:
+            try:
+                search_by_class_number("%03dL" % number, driver)
+            except:
+                continue
+            else:
+                break
+
         stack_lock.acquire()
+        if len(stack) == 0:
+            stack_lock.release()
     driver.close()
 
 #get stupid semester

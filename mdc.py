@@ -185,6 +185,14 @@ def spawn_driver():
         		continue
         	else:
         		break
+        while True:
+        	try:
+        		search_by_class_number("%dL" % number, driver)
+        	except:
+        		continue
+        	else:
+        		break
+
         stack_lock.acquire()
     driver.close()
 
