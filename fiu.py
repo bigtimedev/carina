@@ -98,6 +98,10 @@ def search_by_class_number(number, driver):
             option.click()
             break
 
+    show_open_classes_toggle = driver.find_element_by_id('SSR_CLSRCH_WRK_SSR_OPEN_ONLY$7')
+    if (show_open_classes_toggle.is_selected()):
+        show_open_classes_toggle.click()
+
     course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$4')
     course_number_input.clear()
     course_number_input.send_keys(number)
