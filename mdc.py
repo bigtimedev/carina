@@ -41,7 +41,7 @@ def log_entry(class_num,
         wait_list_total):
     file_lock.acquire()
     try:
-        output_file.write(("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+        s = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
         class_num,
         campus,
         class_name,
@@ -52,7 +52,10 @@ def log_entry(class_num,
         available_seats,
         wait_list_capacity,
         wait_list_total,
-        )).encode('utf8').replace('\n', ' ') + '\n')
+        )
+
+        output_file.write(s.encode('utf8').replace('\n', ' ') + '\n')
+        output_file.flush()
     except UnicodeEncodeError:
         print "goddammit with this"
     file_lock.release()

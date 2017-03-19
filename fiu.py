@@ -53,6 +53,7 @@ def log_entry(class_num,
         wait_list_capacity,
         wait_list_total,
         )).encode('utf8').replace('\n', ' ') + '\n')
+        output_file.flush()
     except UnicodeEncodeError:
         print("goddammit with this")
     file_lock.release()
