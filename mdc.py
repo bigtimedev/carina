@@ -111,6 +111,20 @@ def search_by_class_number(number, driver):
     if (show_open_classes_toggle.is_selected()):
         show_open_classes_toggle.click()
 
+    additional_search_critera = driver.find_element_by_id('DERIVED_CLSRCH_SSR_EXPAND_COLLAPS$149$$1')
+    additional_search_critera.click()
+
+    while True:
+        try:
+            course_career_select = driver.find_element_by_id('SSR_CLSRCH_WRK_ACAD_CAREER$12')
+            for option in course_career_select.find_elements_by_tag_name('option'):
+                if option.get_attribute('value') == 'UGRD':
+                    option.click()
+                    break
+            break
+        except common.exceptions.NoSuchElementException:
+            sleep(.50)
+
     course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$1')
     course_number_input.clear()
     course_number_input.send_keys(number)

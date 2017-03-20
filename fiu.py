@@ -103,6 +103,12 @@ def search_by_class_number(number, driver):
     if (show_open_classes_toggle.is_selected()):
         show_open_classes_toggle.click()
 
+    course_career_select = driver.find_element_by_id('SSR_CLSRCH_WRK_ACAD_CAREER$5')
+    for option in course_career_select.find_elements_by_tag_name('option'):
+        if option.get_attribute('value') == 'UGRD':
+            option.click()
+            break
+
     course_number_input = driver.find_element_by_id('SSR_CLSRCH_WRK_CATALOG_NBR$4')
     course_number_input.clear()
     course_number_input.send_keys(number)
